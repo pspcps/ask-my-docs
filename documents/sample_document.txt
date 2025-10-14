@@ -1,0 +1,93 @@
+# Sample Company Documentation
+
+## Employee Handbook
+
+### Leave Policy
+
+Employees are entitled to the following leave benefits:
+
+1. **Annual Leave**: 20 working days per year
+2. **Sick Leave**: 10 working days per year
+3. **Personal Leave**: 5 working days per year
+
+#### How to Apply for Leave
+
+1. Submit leave request through the HR portal
+2. Provide at least 2 weeks notice for annual leave
+3. Emergency leave can be requested with manager approval
+4. All leave must be approved by your direct supervisor
+
+### Refund Process
+
+Our company offers a 30-day money-back guarantee on all products and services.
+
+#### Refund Eligibility
+
+- Product must be in original condition
+- Return within 30 days of purchase
+- Original receipt required
+- Shipping costs are non-refundable
+
+#### Refund Steps
+
+1. Contact customer service within 30 days
+2. Provide order number and reason for return
+3. Receive return authorization number
+4. Ship item back with RMA number
+5. Refund processed within 5-7 business days
+
+### Product Features
+
+Our flagship product includes the following features:
+
+#### Core Features
+- Real-time data processing
+- Advanced analytics dashboard
+- Multi-user collaboration
+- API integration capabilities
+- Mobile-responsive design
+
+#### Security Features
+- End-to-end encryption
+- Two-factor authentication
+- Regular security audits
+- GDPR compliance
+- Data backup and recovery
+
+### Project Requirements
+
+#### Technical Requirements
+- Python 3.8 or higher
+- Minimum 8GB RAM
+- 50GB available disk space
+- Stable internet connection
+- Modern web browser (Chrome, Firefox, Safari)
+
+#### Development Environment
+- Git for version control
+- Virtual environment setup
+- Code linting with flake8
+- Unit testing with pytest
+- Continuous integration pipeline
+
+### Meeting Notes - Q4 Planning
+
+#### Key Discussion Points
+1. Launch of new product line in Q1
+2. Expansion to European markets
+3. Hiring 10 new developers
+4. Infrastructure upgrades
+5. Customer feedback integration
+
+#### Action Items
+- Marketing team to prepare launch campaign
+- Legal team to review EU compliance
+- HR to start recruitment process
+- IT to plan infrastructure scaling
+- Product team to prioritize feedback features
+
+#### Timeline
+- Q1: Product launch and EU expansion
+- Q2: Team expansion and infrastructure upgrades
+- Q3: Feature development and customer onboarding
+- Q4: Performance review and planning for next year 
