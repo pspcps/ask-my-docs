@@ -1,268 +1,98 @@
-# 📚 Ask My Docs
+# Ask My Docs
 
-A **private, local AI chatbot** that can answer questions from your PDFs, text files, or personal notes using **Ollama + LangChain + Redis Vector Database**.
+A local document Q&A service with a Streamlit workspace, a Flask API, and a background indexing worker. Upload a PDF, inspect the page behind an answer, then replace or delete the document and query the same library from either interface.
 
-🔒 **100% Private & Local** - Your data never leaves your machine!
+![Ask My Docs showing an answer and its supporting excerpt](docs/demo.png)
 
-## 🎯 What You'll Learn
+## Run locally
 
-| Step | Concept | Description |
-|------|---------|-------------|
-| 1 | Setup | Installing Ollama, Python, environment |
-| 2 | Load Model | Running a local LLM (llama3, mistral, etc.) |
-| 3 | Data Ingestion | Loading PDFs/text using LangChain |
-| 4 | Embeddings | Turning text into vectors using ollama.embeddings |
-| 5 | Vector Database | Storing & retrieving relevant info using Redis |
-| 6 | RAG | Connecting retrieved info with Ollama for answering |
-| 7 | Chat Interface | Beautiful UI using Streamlit |
-| 8 | API (optional) | Expose your chatbot via Flask API |
+Use Python 3.11 or 3.12.
 
-## 🛠️ Tools Used
-
-| Tool | Purpose |
-|------|---------|
-| **Ollama** | Runs local LLM like llama3 |
-| **LangChain** | Framework for RAG and data handling |
-| **Redis** | Vector store to retrieve info |
-| **Python** | Main language |
-| **Streamlit** | Beautiful web interface |
-
-## 🚀 Quick Start
-
-### Prerequisites
-
-1. **Install Ollama** (for local LLMs):
-   ```bash
-   # macOS
-   curl -fsSL https://ollama.ai/install.sh | sh
-   
-   # Linux
-   curl -fsSL https://ollama.ai/install.sh | sh
-   
-   # Windows
-   # Download from https://ollama.ai/download
-   ```
-
-2. **Install Redis** (for vector database):
-   ```bash
-   # macOS
-   brew install redis
-   
-   # Ubuntu/Debian
-   sudo apt-get install redis-server
-   
-   # Or use Docker
-   docker run -d -p 6380:6379 redis:alpine
-   ```
-
-3. **Install Python 3.8+**:
-   ```bash
-   # Check your version
-   python3 --version
-   ```
-
-### Installation
-
-1. **Clone and setup**:
-   ```bash
-   git clone <your-repo-url>
-   cd ask-my-docs
-   
-   # Create virtual environment
-   python3 -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   
-   # Install dependencies
-   pip install -r requirements.txt
-   ```
-
-2. **Start services**:
-   ```bash
-   # Start Ollama (in one terminal)
-   ollama serve
-   
-   # Start Redis (in another terminal)
-   redis-server
-   
-   # Or if using Docker for Redis:
-   docker run -d -p 6379:6379 redis:alpine
-   ```
-
-3. **Download a model**:
-   ```bash
-   # Download llama3 (recommended)
-   ollama pull llama3
-   
-   # Or try other models
-   ollama pull mistral
-   ollama pull codellama
-   ```
-
-4. **Add your documents**:
-   ```bash
-   # Create documents directory
-   mkdir documents
-   
-   # Add your PDFs, text files, etc.
-   cp your-document.pdf documents/
-   cp your-notes.txt documents/
-   ```
-
-5. **Run the app**:
-   ```bash
-   streamlit run app.py
-   ```
-
-6. **Open your browser** and go to `http://localhost:8501`
-
-## 📁 Project Structure
-
-```
-ask-my-docs/
-├── app.py                  # Main Streamlit application
-├── data_ingest.py          # Document loading & processing
-├── documents/              # Your PDFs, text files, etc.
-├── requirements.txt        # Python dependencies
-└── README.md              # This file
-```
-
-## 🎯 Example Use Cases
-
-### Company Documentation
-Upload your company's documentation and ask:
-- "How does the leave policy work?"
-- "What is the refund process?"
-- "What are the main features of our product?"
-
-### Research Papers
-Upload research papers and ask:
-- "What are the main findings?"
-- "What methodology was used?"
-- "What are the limitations mentioned?"
-
-### Personal Notes
-Upload your notes and ask:
-- "What did I write about machine learning?"
-- "What are my project ideas?"
-- "What are my meeting notes from last week?"
-
-## 🔧 Configuration
-
-### Supported File Types
-- **PDF** (.pdf)
-- **Text** (.txt)
-- **Markdown** (.md)
-- **Word Documents** (.docx, .doc)
-- **CSV** (.csv)
-
-### Model Options
-You can change the model in `app.py`:
-```python
-MODEL_NAME = "llama3"  # or "mistral", "codellama", etc.
-```
-
-### Vector Database
-The app uses Redis as the vector database. You can change the configuration:
-```python
-REDIS_URL = "redis://localhost:6379"
-COLLECTION_NAME = "ask_my_docs"
-```
-
-## 🚀 Advanced Features
-
-### Custom Prompts
-Modify the prompt template in `app.py` to customize how the AI responds:
-```python
-template = """You are a helpful AI assistant that answers questions based on the provided context.
-...
-```
-
-### Document Chunking
-Adjust chunk size and overlap in `data_ingest.py`:
-```python
-chunk_size=1000,      # Size of each text chunk
-chunk_overlap=200     # Overlap between chunks
-```
-
-### Multiple Models
-You can easily switch between different Ollama models:
 ```bash
-# Download different models
-ollama pull llama3
-ollama pull mistral
-ollama pull codellama
-ollama pull neural-chat
+git clone https://github.com/pspcps/ask-my-docs.git
+cd ask-my-docs
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+python -m streamlit run app.py
 ```
 
-## 🐛 Troubleshooting
+On Windows PowerShell, activate with `.venv\Scripts\Activate.ps1`. Visit <http://127.0.0.1:8501>. The **Sample handbook** is a standalone preview with preset answers and keyword search. To use the persistent library, install [Ollama](https://ollama.com/download), start it if needed, and pull the models.
 
-### Ollama Issues
 ```bash
-# Check if Ollama is running
-curl http://localhost:11434/api/tags
-
-# Restart Ollama
-pkill ollama
-ollama serve
+ollama pull nomic-embed-text
+ollama pull llama3.2
 ```
 
-### Redis Issues
+In two more terminals, activate the same Python environment and start the worker and API.
+
 ```bash
-# Check if Redis is running on port 6380
-redis-cli -p 6380 ping
-
-# Start Redis manually on port 6380
-redis-server --port 6380
+python worker.py  # Processes queued jobs
+python api.py     # Run separately. API listens on 127.0.0.1:8000
 ```
 
-### Python Dependencies
+Streamlit uses the same Python service as the API. The API process is optional for UI-only use. The worker must run for queued jobs to finish.
+
+## Demo the PDF lifecycle
+
+1. Select **Document library** and upload [field-handbook-v1.pdf](examples/field-handbook-v1.pdf). Queue the upload and wait until version 1 is ready.
+2. Ask **“How much annual leave do Northstar field employees receive each year?”** Open **Source excerpts** to see **18 working days** on page 1 and confirm the cited version.
+3. In **Manage documents**, select the existing handbook and upload [field-handbook-v2.pdf](examples/field-handbook-v2.pdf) as its replacement. Version 1 remains available until version 2 publishes. Ask again and check that the answer and excerpt now say **22 working days**.
+4. Select the document and confirm deletion. The library no longer lists its passages. The API returns an empty retrieval result and an abstention for the same question.
+
+The same flow can cross interfaces. Upload in Streamlit, then use the API to inspect the document and ask the same question.
+
 ```bash
-# Reinstall dependencies
-pip install -r requirements.txt --upgrade
-
-# Check Python version
-python3 --version
+curl -sS http://127.0.0.1:8000/documents
+curl -sS http://127.0.0.1:8000/ask \
+  -H 'Content-Type: application/json' \
+  -d '{"question":"How much annual leave do Northstar field employees receive each year?"}'
 ```
 
-### Memory Issues
-If you're running out of memory:
-1. Use a smaller model: `ollama pull llama3:3b`
-2. Reduce chunk size in `data_ingest.py`
-3. Close other applications
+Each answer contains `answer`, `abstained`, `reason`, `citations`, and retrieval and generation timings in milliseconds. Citations include a document ID, name, version, chunk ID, page when applicable, and excerpt. The service resolves model-selected citation numbers against retrieved chunks and abstains on missing or invalid references. Valid references alone do not guarantee that every claim is supported.
 
-## 🔒 Privacy & Security
+## API
 
-- **100% Local**: All processing happens on your machine
-- **No Data Sent**: Your documents never leave your computer
-- **Open Source**: Full transparency of the code
-- **No API Keys**: No external services required
+| Method and route | Behavior |
+| --- | --- |
+| `GET /health` | Service liveness |
+| `GET /documents` | Documents, active version and chunk IDs, latest job status |
+| `POST /documents` | Upload multipart `file`. Returns 202 for a new job or 200 for matching active or queued content |
+| `PUT /documents/<id>` | Queue a replacement under the same document ID |
+| `DELETE /documents/<id>` | Remove the document, jobs and chunks. Returns 204 |
+| `POST /documents/<id>/rebuild` | Re-index stored active bytes as a new version |
+| `GET /jobs/<id>` | Job state, progress, attempt count and failure details |
+| `POST /jobs/<id>/retry` | Requeue the latest failed job for the document |
+| `POST /retrieve` | Ranked passages without answer generation |
+| `POST /ask` | Answer with structured citations or abstention |
 
-## 🤝 Contributing
+Both query endpoints accept `question`, optional `document_ids`, and optional `limit` (default 4). Omit `document_ids` to search all active documents. Send an empty list to search none. Answer generation uses up to six retrieved passages above the score threshold.
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
+## Storage and operations
 
-## 📄 License
+- **One store.** SQLite in WAL mode holds source bytes, SHA-256 hashes, versions, job state, and normalized vectors. The main app uses exact cosine search with NumPy, sized for a local library. No Redis or Chroma server is needed.
+- **Atomic publication.** The worker claims durable jobs from SQLite and tracks progress across parsing and embedding. A successful transaction publishes the new version and removes superseded chunks. A failure leaves the last ready version searchable. If a worker stops mid-job, a running worker marks its expired lease failed after five minutes. Retry from the UI or API.
+- **Embedding compatibility.** Each index version records the embedding model name, digest and index-format revision. If the model or format changes, rebuild every affected active document via **Rebuild embeddings** or the rebuild endpoint. Until rebuilt, queries scoped to those documents return a conflict. Changing only the chat model requires no rebuild.
+- **Local data.** Every process must use the same absolute database path. Keep the database on local storage and personal files out of Git. The default directory, SQLite artifacts and `documents/` are ignored. Re-upload originals to migrate from the old Chroma or Redis prototype. The API is designed for a trusted local machine and has no authentication. A remote `OLLAMA_HOST` receives document text and questions.
+- **Supported files.** Text PDFs, UTF-8 TXT/Markdown, DOCX and CSV. Uploads are capped at 20 MB each. Run OCR before uploading image-only PDFs.
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `ASK_DOCS_DB` | `.ask-my-docs/library.sqlite3` under the repository | Shared SQLite path |
+| `OLLAMA_HOST` | `http://127.0.0.1:11434` | Ollama server |
+| `ASK_DOCS_EMBED_MODEL` | `nomic-embed-text` | Dedicated passage and question embedding model |
+| `ASK_DOCS_CHAT_MODEL` | `llama3.2` | Answer model |
+| `ASK_DOCS_MIN_SCORE` | `0.35` | Minimum cosine score for a passage to be passed to the answer model |
 
-## 🙏 Acknowledgments
+## Tests and evaluation
 
-- [Ollama](https://ollama.ai/) for local LLM inference
-- [LangChain](https://langchain.com/) for the RAG framework
-- [Streamlit](https://streamlit.io/) for the web interface
-- [Redis](https://redis.io/) for vector storage
+```bash
+python -m unittest -v
+python evaluate.py --hardware-note "CPU/GPU and memory of the Ollama host" --output evaluation-v1.json
+```
 
-## 📞 Support
+CI runs the unit and API integration tests on Python 3.11 and 3.12 with a deterministic test engine. They cover the PDF lifecycle, duplicate detection, failed updates, retry, model change, and deletion during indexing.
 
-If you encounter any issues:
-1. Check the troubleshooting section above
-2. Search existing issues
-3. Create a new issue with details
+The [v1 evaluation set](evaluations/v1.json) pairs answerable questions with known source passages and includes both unrelated and plausible but unsupported questions. The evaluator builds an isolated index and reports retrieval recall at *k*, citation support and precision, expected answer facts, and correct and false abstention rates. Citation and fact checks match human-labeled excerpts and terms. Inspect the per-question answers for claim-level quality. The report records median and p95 latency, corpus hashes, model digests, Ollama version, and hardware.
 
----
-
-**Happy Document Chatting! 🎉** 
+The [recorded CPU baseline](evaluations/baseline-v1.json) used `llama3.2` and `nomic-embed-text` on eight questions over five indexed passages. It found all six labeled passages in the top two results and abstained on all three unanswerable questions. Four of five answerable cases cited all expected sources, and three of five matched all expected facts. One answer omitted its units and another answered only half of a two-part question. Median end-to-end latency was 14.1 seconds on that CPU run.

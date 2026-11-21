@@ -1,0 +1,11 @@
+.venv/
+venv/
+__pycache__/
+.pytest_cache/
+chroma_db/
+.env
+documents/
+.ask-my-docs/
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm

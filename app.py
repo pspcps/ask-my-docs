@@ -1,216 +1,198 @@
-#!/usr/bin/env python3
-"""
-Ask My Docs - A Local AI Chatbot for Your PDFs or Data
-Main application script that provides a chat interface for querying documents.
-"""
+"""Streamlit interface for the shared document service."""
 
-import os
-import sys
 from pathlib import Path
+
 import streamlit as st
-from data_ingest import DocumentProcessor
-import ollama
-from langchain_community.vectorstores import Chroma
-from langchain_community.embeddings import OllamaEmbeddings
-from langchain_community.llms import Ollama
-from langchain.chains import RetrievalQA
-from langchain.prompts import PromptTemplate
-import requests
 
-# Configuration
-COLLECTION_NAME = "ask_my_docs"
-MODEL_NAME = "llama3"  # or "mistral", "codellama", etc.
+from service import DocumentService, ServiceError
+from workspace import DEMO_PROMPTS, FILE_TYPES, ROOT, demo_answer, demo_passages
 
-# Ensure Ollama host is explicitly set for reliability in various shells
-os.environ.setdefault("OLLAMA_HOST", "http://127.0.0.1:11434")
+st.set_page_config(page_title="Ask My Docs", page_icon=":material/library_books:", layout="wide")
+st.html(ROOT / "workspace.css")
+state = st.session_state
+state.setdefault("messages", [])
+state.setdefault("mode", "Sample handbook")
 
-class AskMyDocs:
-    def __init__(self):
-        self.embeddings = OllamaEmbeddings(model=MODEL_NAME)
-        self.llm = Ollama(model=MODEL_NAME)
-        self.vector_store = None
-        self.qa_chain = None
-        
-    def setup_vector_store(self):
-        """Initialize or connect to the vector store"""
-        try:
-            # Try to load existing vector store
-            if os.path.exists("chroma_db"):
-                self.vector_store = Chroma(
-                    persist_directory="chroma_db",
-                    embedding_function=self.embeddings,
-                    collection_name=COLLECTION_NAME
-                )
-                return True
-            else:
-                return False
-        except Exception as e:
-            st.error(f"Error connecting to vector store: {e}")
-            return False
-    
-    def process_documents(self, documents_path="documents"):
-        """Process documents and create embeddings"""
-        processor = DocumentProcessor()
-        docs_path = Path(documents_path)
-        
-        if not docs_path.exists():
-            st.warning(f"Documents directory '{documents_path}' not found. Please add some PDFs or text files.")
-            return False
-        
-        with st.spinner("Processing documents..."):
-            try:
-                # Process documents
-                documents = processor.load_documents(docs_path)
-                if not documents:
-                    st.warning("No documents found to process.")
-                    return False
-                
-                # Create vector store
-                self.vector_store = Chroma.from_documents(
-                    documents=documents,
-                    embedding=self.embeddings,
-                    persist_directory="chroma_db",
-                    collection_name=COLLECTION_NAME
-                )
-                
-                # Persist the vector store
-                self.vector_store.persist()
-                
-                st.success(f"Successfully processed {len(documents)} documents!")
-                return True
-                
-            except Exception as e:
-                st.error(f"Error processing documents: {e}")
-                return False
-    
-    def setup_qa_chain(self):
-        """Setup the question-answering chain"""
-        if not self.vector_store:
-            return False
-            
-        # Create a custom prompt template
-        template = """You are a helpful AI assistant that answers questions based on the provided context.
-        
-        Context: {context}
-        
-        Question: {question}
-        
-        Answer the question based on the context above. If the answer cannot be found in the context, say "I don't have enough information to answer this question."
-        
-        Answer:"""
-        
-        prompt = PromptTemplate(
-            template=template,
-            input_variables=["context", "question"]
-        )
-        
-        self.qa_chain = RetrievalQA.from_chain_type(
-            llm=self.llm,
-            chain_type="stuff",
-            retriever=self.vector_store.as_retriever(search_kwargs={"k": 3}),
-            chain_type_kwargs={"prompt": prompt}
-        )
-        return True
-    
-    def ask_question(self, question):
-        """Ask a question and get an answer"""
-        if not self.qa_chain:
-            return "Please process documents first."
-        
-        try:
-            with st.spinner("Thinking..."):
-                answer = self.qa_chain.run(question)
-                return answer
-        except Exception as e:
-            return f"Error getting answer: {e}"
 
-def main():
-    st.set_page_config(
-        page_title="Ask My Docs",
-        page_icon="📚",
-        layout="wide"
-    )
-    
-    st.title("📚 Ask My Docs")
-    st.markdown("**Your private AI chatbot for your documents**")
-    
-    # Initialize the app
-    if 'ask_my_docs' not in st.session_state:
-        st.session_state.ask_my_docs = AskMyDocs()
-    
-    app = st.session_state.ask_my_docs
-    
-    # Sidebar for controls
-    with st.sidebar:
-        st.header("⚙️ Settings")
-        
-        # Robust Ollama check via direct HTTP ping
-        try:
-            base = os.environ.get("OLLAMA_HOST", "http://127.0.0.1:11434").rstrip("/")
-            resp = requests.get(f"{base}/api/tags", timeout=5)
-            if resp.status_code == 200:
-                tags = resp.json()
-                model_names = [m.get('name', 'unknown') for m in tags.get('models', [])]
-                st.success("✅ Ollama is running")
-                st.write("Available models:", model_names or ["(none)"])
-            else:
-                st.error("❌ Ollama is not reachable")
-                st.caption(f"HTTP {resp.status_code} from {base}/api/tags")
-                st.info("Please start Ollama first: `ollama serve`")
-                return
-        except Exception as e:
-            st.error("❌ Ollama is not running")
-            st.caption(f"Detail: {e}")
-            st.info("Please start Ollama first: `ollama serve`")
-            return
-        
-        st.divider()
-        
-        # Document processing
-        if st.button("🔄 Process Documents", type="primary"):
-            if app.process_documents():
-                app.setup_qa_chain()
-                st.success("Documents processed successfully!")
-    
-    # Main chat interface
-    if app.qa_chain:
-        st.success("✅ Ready to answer questions!")
-        
-        # Chat history
-        if "messages" not in st.session_state:
-            st.session_state.messages = []
-        
-        # Display chat history
-        for message in st.session_state.messages:
-            with st.chat_message(message["role"]):
-                st.markdown(message["content"])
-        
-        # Chat input
-        if prompt := st.chat_input("Ask a question about your documents..."):
-            # Add user message to chat history
-            st.session_state.messages.append({"role": "user", "content": prompt})
-            with st.chat_message("user"):
-                st.markdown(prompt)
-            
-            # Get and display assistant response
-            with st.chat_message("assistant"):
-                response = app.ask_question(prompt)
-                st.markdown(response)
-                st.session_state.messages.append({"role": "assistant", "content": response})
-    
+@st.cache_resource
+def document_service():
+    return DocumentService()
+
+
+service = document_service()
+
+
+def run_action(action, *args):
+    try:
+        result = action(*args)
+    except ServiceError as error:
+        notice = ("error", str(error))
     else:
-        st.info("👆 Click 'Process Documents' in the sidebar to get started!")
-        
-        # Show sample questions
-        st.subheader("💡 Example Questions")
-        st.markdown("""
-        Once you've processed your documents, you can ask questions like:
-        
-        - "What is the company's leave policy?"
-        - "How does the refund process work?"
-        - "What are the main features of the product?"
-        - "What are the requirements for the project?"
-        """)
+        if result is None:
+            notice = ("info", "Document removed.")
+        elif result.get("duplicate"):
+            notice = ("info", f"{result['name']} is already in the library or queued.")
+        else:
+            notice = ("info", f"{result['name']} · version {result['version']} queued.")
+    state.setdefault("notices", []).append(notice)
 
-if __name__ == "__main__":
-    main() 
+
+def library_snapshot(documents):
+    return [(item["id"], item["latest_job"]["id"], item["latest_job"]["status"],
+             item["latest_job"]["progress"], item["latest_job"]["attempts"]) for item in documents]
+
+
+@st.fragment(run_every=2)
+def job_status(snapshot):
+    current = service.documents()
+    if library_snapshot(current) != snapshot:
+        st.rerun()
+    for item in current:
+        job = item["latest_job"]
+        if job["status"] in ("queued", "running"):
+            st.progress(job["progress"], text=f"{job['name']} · v{job['version']} · {job['status']}")
+
+
+def display_message(message):
+    avatar = ":material/person:" if message["role"] == "user" else ":material/auto_stories:"
+    with st.chat_message(message["role"], avatar=avatar):
+        st.markdown(message["text"])
+        sources = message.get("sources", [])
+        if sources:
+            with st.expander(f"Source excerpts ({len(sources)})"):
+                for source in sources:
+                    st.text(source["label"])
+                    if source.get("sample"):
+                        st.markdown(source["excerpt"])
+                    else:
+                        st.text(source["excerpt"])
+
+
+documents = service.documents()
+with st.sidebar:
+    st.html("""<div class="brand"><span class="brand-mark">A</span><div><strong>Ask My Docs</strong>
+    <small>Document workspace</small></div></div>""")
+    st.radio("Workspace", ["Sample handbook", "Document library"], key="mode")
+    demo = state.mode == "Sample handbook"
+    if not demo:
+        st.subheader("Manage documents")
+        for level, notice in state.pop("notices", []):
+            if level == "error":
+                st.error(notice)
+            else:
+                st.info(notice)
+        labels = {item["id"]: f"{item['name']} · {item['id'][:6]}" for item in documents}
+        target = st.selectbox(
+            "Action", [None, *labels], format_func=lambda item: labels.get(item, "Add a document"),
+        )
+        files = st.file_uploader(
+            "Replacement file" if target else "Add documents", type=FILE_TYPES,
+            accept_multiple_files=target is None, key=f"files-{target}",
+        )
+        if st.button("Queue replacement" if target else "Queue uploads", disabled=not files, width="stretch"):
+            for file in ([files] if target else files):
+                run_action(service.enqueue, file.name, file.getvalue(), target)
+            st.rerun()
+        if target:
+            item = next(item for item in documents if item["id"] == target)
+            job = item["latest_job"]
+            if job["status"] == "failed":
+                st.error(job["error"])
+                if st.button("Retry failed job", width="stretch"):
+                    run_action(service.retry, job["id"])
+                    st.rerun()
+            if item["active"] and job["status"] not in ("queued", "running"):
+                if st.button("Rebuild embeddings", width="stretch"):
+                    run_action(service.rebuild, target)
+                    st.rerun()
+            with st.popover("Delete document", width="stretch"):
+                st.write("Remove this document, its active passages, and its job history.")
+                if st.button("Confirm deletion"):
+                    run_action(service.delete, target)
+                    st.rerun()
+        job_status(library_snapshot(documents))
+        st.caption("Run `python worker.py` to process queued jobs.")
+
+active = {item["id"]: item for item in documents if item["active"]}
+history_key = (demo, () if demo else tuple((key, item["active_version"]) for key, item in active.items()))
+if state.get("history_key") != history_key:
+    state.history_key = history_key
+    state.messages = []
+
+st.html(
+    '<div class="hero"><h1>Ask My Docs<span>.</span></h1>'
+    '<p>Ask a question, then go straight to the passage behind the answer.</p></div>'
+)
+chat_column, context_column = st.columns([2.4, 1], gap="large")
+with context_column:
+    with st.container(border=True):
+        st.subheader("Active library")
+        if demo:
+            st.caption("Sample handbook · no model needed")
+            st.markdown(f"**1** document · **{len(demo_passages())}** passages")
+            st.text("sample_document.txt")
+            st.caption("Try the example questions or search the handbook with your own wording.")
+            selected = []
+        else:
+            st.caption("Persistent library · shared with the API")
+            count = sum(len(item["chunk_ids"]) for item in active.values())
+            st.markdown(f"**{len(active)}** active · **{count}** {'passage' if count == 1 else 'passages'}")
+            selected = st.multiselect(
+                "Search within", list(active), default=list(active), format_func=lambda item: labels[item],
+                key=f"scope-{history_key[1]}",
+            )
+            for item in documents:
+                job = item["latest_job"]
+                current = f"v{item['active_version']} active · " if item["active"] else ""
+                st.text(f"{item['name']} · {current}v{job['version']} {job['status']}")
+    if state.messages:
+        if st.button("Clear conversation", icon=":material/delete_sweep:", width="stretch"):
+            state.messages = []
+            st.rerun()
+        transcript = []
+        for message in state.messages:
+            transcript.append(f"## {message['role'].title()}\n\n{message['text']}")
+            for source in message.get("sources", []):
+                transcript.append(f"{source['label']}\n\n{source['excerpt']}")
+        st.download_button("Export conversation", "\n\n".join(transcript), "ask-my-docs.md",
+                           "text/markdown", icon=":material/download:", width="stretch")
+
+with chat_column:
+    st.subheader("Conversation")
+    prompt = None
+    if not state.messages and demo:
+        st.caption("Start with a question about the sample company handbook.")
+        for example in DEMO_PROMPTS:
+            if st.button(example, icon=":material/arrow_outward:", width="stretch"):
+                prompt = example
+    if not demo and not selected:
+        st.info("Queue a document, then select a ready version from the active library.")
+    for message in state.messages:
+        display_message(message)
+    typed = st.chat_input("Ask a question about your documents…", max_chars=1500, disabled=not demo and not selected)
+    question = (typed or prompt or "").strip()
+    if question:
+        try:
+            with st.spinner("Finding relevant passages…"):
+                if demo:
+                    answer, passages = demo_answer(question, demo_passages())
+                    sources = [
+                        {"label": f"[{index}] {item.name} · {item.location}", "excerpt": item.text, "sample": True}
+                        for index, item in enumerate(passages, 1)
+                    ]
+                else:
+                    result = service.ask(question, selected)
+                    answer = result["answer"]
+                    sources = [
+                        {"label": f"[{item['number']}] {item['document_name']} · {item['location']} · v{item['version']}",
+                         "excerpt": item["excerpt"]}
+                        for item in result["citations"]
+                    ]
+        except ServiceError as error:
+            st.error(str(error))
+        else:
+            state.messages.extend([
+                {"role": "user", "text": question},
+                {"role": "assistant", "text": answer, "sources": sources},
+            ])
+            st.rerun()
