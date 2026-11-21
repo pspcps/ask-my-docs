@@ -1,0 +1,35 @@
+# Core dependencies
+langchain==0.1.0
+
+# LLM and embeddings
+ollama==0.1.7
+
+# Vector database
+redis==5.0.1
+
+# Document processing
+pypdf==3.17.4
+unstructured==0.11.8
+python-docx==1.1.0
+markdown==3.5.2
+
+# Web interface
+streamlit==1.29.0
+flask==3.0.0
+flask-cors==4.0.0
+
+# Utilities
+python-dotenv==1.0.0
+pathlib==1.0.1
+typing-extensions==4.8.0
+
+# Optional: For better PDF processing
+pdfplumber==0.10.3
+
+# Optional: For better text processing
+nltk==3.8.1
+
+# Development dependencies (optional)
+pytest==7.4.3
+black==23.11.0
+flake8==6.1.0

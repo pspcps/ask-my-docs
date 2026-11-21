@@ -1,216 +1,219 @@
-#!/usr/bin/env python3
-"""
-Ask My Docs - A Local AI Chatbot for Your PDFs or Data
-Main application script that provides a chat interface for querying documents.
-"""
+"""Streamlit interface for the Ask My Docs workspace."""
 
-import os
-import sys
 from pathlib import Path
-import streamlit as st
-from data_ingest import DocumentProcessor
-import ollama
-from langchain_community.vectorstores import Chroma
-from langchain_community.embeddings import OllamaEmbeddings
-from langchain_community.llms import Ollama
-from langchain.chains import RetrievalQA
-from langchain.prompts import PromptTemplate
+
 import requests
+import streamlit as st
 
-# Configuration
-COLLECTION_NAME = "ask_my_docs"
-MODEL_NAME = "llama3"  # or "mistral", "codellama", etc.
+from workspace import (
+    CHAT_MODEL, DEMO, DEMO_PROMPTS, EMBED_MODEL, FILE_TYPES, ROOT,
+    answer_question, demo_answer, demo_passages, embed, ollama_request,
+    passages_from_file,
+)
 
-# Ensure Ollama host is explicitly set for reliability in various shells
-os.environ.setdefault("OLLAMA_HOST", "http://127.0.0.1:11434")
+st.set_page_config(page_title="Ask My Docs", page_icon=":material/library_books:", layout="wide")
+st.html(ROOT / "workspace.css")
 
-class AskMyDocs:
-    def __init__(self):
-        self.embeddings = OllamaEmbeddings(model=MODEL_NAME)
-        self.llm = Ollama(model=MODEL_NAME)
-        self.vector_store = None
-        self.qa_chain = None
-        
-    def setup_vector_store(self):
-        """Initialize or connect to the vector store"""
+state = st.session_state
+for key, value in {
+    "mode": "demo",
+    "passages": demo_passages(),
+    "vectors": None,
+    "messages": [],
+    "workspace_revision": 0,
+}.items():
+    state.setdefault(key, value)
+
+
+@st.cache_data(ttl=15, show_spinner=False)
+def installed_models():
+    try:
+        return [item["name"] for item in ollama_request("tags").get("models", [])]
+    except (requests.RequestException, ValueError, KeyError):
+        return None
+
+
+def set_library(mode, passages, vectors=None):
+    state.mode = mode
+    state.passages = passages
+    state.vectors = vectors
+    state.messages = []
+    state.workspace_revision += 1
+
+
+def index_files(files):
+    passages = []
+    problems = []
+    indexed_names = set()
+    for name, read in files:
+        if name in indexed_names:
+            problems.append(f"{name}: duplicate filename")
+            continue
         try:
-            # Try to load existing vector store
-            if os.path.exists("chroma_db"):
-                self.vector_store = Chroma(
-                    persist_directory="chroma_db",
-                    embedding_function=self.embeddings,
-                    collection_name=COLLECTION_NAME
-                )
-                return True
-            else:
-                return False
-        except Exception as e:
-            st.error(f"Error connecting to vector store: {e}")
-            return False
-    
-    def process_documents(self, documents_path="documents"):
-        """Process documents and create embeddings"""
-        processor = DocumentProcessor()
-        docs_path = Path(documents_path)
-        
-        if not docs_path.exists():
-            st.warning(f"Documents directory '{documents_path}' not found. Please add some PDFs or text files.")
-            return False
-        
-        with st.spinner("Processing documents..."):
-            try:
-                # Process documents
-                documents = processor.load_documents(docs_path)
-                if not documents:
-                    st.warning("No documents found to process.")
-                    return False
-                
-                # Create vector store
-                self.vector_store = Chroma.from_documents(
-                    documents=documents,
-                    embedding=self.embeddings,
-                    persist_directory="chroma_db",
-                    collection_name=COLLECTION_NAME
-                )
-                
-                # Persist the vector store
-                self.vector_store.persist()
-                
-                st.success(f"Successfully processed {len(documents)} documents!")
-                return True
-                
-            except Exception as e:
-                st.error(f"Error processing documents: {e}")
-                return False
-    
-    def setup_qa_chain(self):
-        """Setup the question-answering chain"""
-        if not self.vector_store:
-            return False
-            
-        # Create a custom prompt template
-        template = """You are a helpful AI assistant that answers questions based on the provided context.
-        
-        Context: {context}
-        
-        Question: {question}
-        
-        Answer the question based on the context above. If the answer cannot be found in the context, say "I don't have enough information to answer this question."
-        
-        Answer:"""
-        
-        prompt = PromptTemplate(
-            template=template,
-            input_variables=["context", "question"]
-        )
-        
-        self.qa_chain = RetrievalQA.from_chain_type(
-            llm=self.llm,
-            chain_type="stuff",
-            retriever=self.vector_store.as_retriever(search_kwargs={"k": 3}),
-            chain_type_kwargs={"prompt": prompt}
-        )
-        return True
-    
-    def ask_question(self, question):
-        """Ask a question and get an answer"""
-        if not self.qa_chain:
-            return "Please process documents first."
-        
-        try:
-            with st.spinner("Thinking..."):
-                answer = self.qa_chain.run(question)
-                return answer
-        except Exception as e:
-            return f"Error getting answer: {e}"
+            passages.extend(passages_from_file(name, read()))
+            indexed_names.add(name)
+        except Exception as error:
+            problems.append(f"{name}: {error}")
+    if problems:
+        for problem in problems:
+            st.warning(problem)
+    if not passages:
+        st.error("No readable files were indexed. Your current library is still active.")
+        return
+    try:
+        with st.spinner(f"Embedding {len(passages)} passages locally…"):
+            vectors = embed([passage.text for passage in passages])
+    except (requests.RequestException, ValueError, KeyError) as error:
+        st.error(f"Indexing failed. Your current library is still active. {error}")
+        return
+    set_library("local", passages, vectors)
+    state.index_notices = problems
+    st.rerun()
 
-def main():
-    st.set_page_config(
-        page_title="Ask My Docs",
-        page_icon="📚",
-        layout="wide"
+
+def show_message(message):
+    with st.chat_message(message["role"], avatar=":material/person:" if message["role"] == "user" else ":material/auto_stories:"):
+        st.markdown(message["text"])
+        sources = message.get("sources", [])
+        if sources:
+            with st.expander(f"Source excerpts ({len(sources)})"):
+                for number, passage in enumerate(sources, 1):
+                    st.text(f"[{number}] {passage.name} · {passage.location}")
+                    if state.mode == "demo":
+                        st.markdown(passage.text)
+                    else:
+                        st.text(passage.text)
+
+
+models = installed_models()
+embed_tag = EMBED_MODEL if ":" in EMBED_MODEL else f"{EMBED_MODEL}:latest"
+chat_tag = CHAT_MODEL if ":" in CHAT_MODEL else f"{CHAT_MODEL}:latest"
+chat_models = [model for model in models or [] if model.split(":")[0] != embed_tag.split(":")[0]]
+can_index = embed_tag in (models or [])
+pending_index = None
+
+with st.sidebar:
+    st.html("""<div class="brand"><span class="brand-mark">A</span><div><strong>Ask My Docs</strong>
+    <small>Document workspace</small></div></div>""")
+    st.subheader("Library")
+    uploaded = st.file_uploader(
+        "Add documents", type=FILE_TYPES, accept_multiple_files=True,
+        help="PDF, TXT, Markdown, DOCX or CSV. Each upload can be up to 20 MB.",
     )
-    
-    st.title("📚 Ask My Docs")
-    st.markdown("**Your private AI chatbot for your documents**")
-    
-    # Initialize the app
-    if 'ask_my_docs' not in st.session_state:
-        st.session_state.ask_my_docs = AskMyDocs()
-    
-    app = st.session_state.ask_my_docs
-    
-    # Sidebar for controls
-    with st.sidebar:
-        st.header("⚙️ Settings")
-        
-        # Robust Ollama check via direct HTTP ping
-        try:
-            base = os.environ.get("OLLAMA_HOST", "http://127.0.0.1:11434").rstrip("/")
-            resp = requests.get(f"{base}/api/tags", timeout=5)
-            if resp.status_code == 200:
-                tags = resp.json()
-                model_names = [m.get('name', 'unknown') for m in tags.get('models', [])]
-                st.success("✅ Ollama is running")
-                st.write("Available models:", model_names or ["(none)"])
-            else:
-                st.error("❌ Ollama is not reachable")
-                st.caption(f"HTTP {resp.status_code} from {base}/api/tags")
-                st.info("Please start Ollama first: `ollama serve`")
-                return
-        except Exception as e:
-            st.error("❌ Ollama is not running")
-            st.caption(f"Detail: {e}")
-            st.info("Please start Ollama first: `ollama serve`")
-            return
-        
-        st.divider()
-        
-        # Document processing
-        if st.button("🔄 Process Documents", type="primary"):
-            if app.process_documents():
-                app.setup_qa_chain()
-                st.success("Documents processed successfully!")
-    
-    # Main chat interface
-    if app.qa_chain:
-        st.success("✅ Ready to answer questions!")
-        
-        # Chat history
-        if "messages" not in st.session_state:
-            st.session_state.messages = []
-        
-        # Display chat history
-        for message in st.session_state.messages:
-            with st.chat_message(message["role"]):
-                st.markdown(message["content"])
-        
-        # Chat input
-        if prompt := st.chat_input("Ask a question about your documents..."):
-            # Add user message to chat history
-            st.session_state.messages.append({"role": "user", "content": prompt})
-            with st.chat_message("user"):
-                st.markdown(prompt)
-            
-            # Get and display assistant response
-            with st.chat_message("assistant"):
-                response = app.ask_question(prompt)
-                st.markdown(response)
-                st.session_state.messages.append({"role": "assistant", "content": response})
-    
-    else:
-        st.info("👆 Click 'Process Documents' in the sidebar to get started!")
-        
-        # Show sample questions
-        st.subheader("💡 Example Questions")
-        st.markdown("""
-        Once you've processed your documents, you can ask questions like:
-        
-        - "What is the company's leave policy?"
-        - "How does the refund process work?"
-        - "What are the main features of the product?"
-        - "What are the requirements for the project?"
-        """)
+    if st.button("Index uploads", icon=":material/add_to_photos:", width="stretch",
+                 disabled=not (uploaded and can_index)):
+        pending_index = [(Path(file.name).name, file.getvalue) for file in uploaded]
 
-if __name__ == "__main__":
-    main() 
+    with st.expander("Use the local documents folder"):
+        paths = sorted(
+            path for path in (ROOT / "documents").glob("*")
+            if path.is_file() and path.suffix.lower().lstrip(".") in FILE_TYPES and path != DEMO
+        )
+        st.caption(f"{len(paths)} supported files in the project’s documents/ folder.")
+        if st.button("Index folder", width="stretch", disabled=not (paths and can_index)):
+            pending_index = [(path.name, path.read_bytes) for path in paths]
+
+    if st.button("Open sample handbook", icon=":material/auto_stories:", width="stretch",
+                 disabled=state.mode == "demo"):
+        set_library("demo", demo_passages())
+        state.pop("index_notices", None)
+        st.rerun()
+
+    st.divider()
+    st.subheader("Local engine")
+    if models is None:
+        st.caption("Ollama offline · sample mode available")
+        st.code("ollama serve", language="bash")
+    else:
+        st.caption("Ollama connected")
+        if not can_index:
+            st.code(f"ollama pull {EMBED_MODEL}", language="bash")
+        if not chat_models:
+            st.code(f"ollama pull {CHAT_MODEL}", language="bash")
+    model = None
+    if chat_models:
+        model = st.selectbox("Chat model", chat_models,
+                             index=chat_models.index(chat_tag) if chat_tag in chat_models else 0)
+    if st.button("Refresh engine status", width="stretch"):
+        installed_models.clear()
+        st.rerun()
+
+if pending_index:
+    index_files(pending_index)
+
+names = list(dict.fromkeys(passage.name for passage in state.passages))
+demo = state.mode == "demo"
+st.html(
+    '<div class="hero">'
+    '<h1>Ask My Docs<span>.</span></h1>'
+    '<p>Ask a question, then go straight to the passage behind the answer.</p></div>'
+)
+
+chat_column, context_column = st.columns([2.4, 1], gap="large")
+with context_column:
+    with st.container(border=True):
+        st.subheader("Active library")
+        st.caption("Sample handbook · no model needed" if demo else "Local documents · this session")
+        st.markdown(f"**{len(names)}** {'document' if len(names) == 1 else 'documents'}"
+                    f"  ·  **{len(state.passages)}** passages")
+        if demo:
+            st.text("sample_document.txt")
+            st.caption("Try the example questions or search the handbook with your own wording.")
+            selected = names
+        else:
+            selected = st.multiselect("Search within", names, default=names,
+                                      key=f"scope_{state.workspace_revision}")
+            for problem in state.get("index_notices", []):
+                st.warning(problem)
+
+    if state.messages:
+        if st.button("Clear conversation", icon=":material/delete_sweep:", width="stretch"):
+            state.messages = []
+            st.rerun()
+        transcript = []
+        for message in state.messages:
+            transcript.append(f"## {message['role'].title()}\n\n{message['text']}")
+            for number, source in enumerate(message.get("sources", []), 1):
+                transcript.append(f"[{number}] {source.name} · {source.location}\n\n{source.text}")
+        st.download_button("Export conversation", "\n\n".join(transcript), "ask-my-docs.md",
+                           "text/markdown", icon=":material/download:", width="stretch")
+
+with chat_column:
+    st.subheader("Conversation")
+    if not state.messages:
+        if demo:
+            st.caption("Start with a question about the sample company handbook.")
+        else:
+            st.caption("Ask about the selected files. Answers include the passages retrieved for each question.")
+    prompt = None
+    if demo:
+        if not state.messages:
+            for example in DEMO_PROMPTS:
+                if st.button(example, icon=":material/arrow_outward:", width="stretch"):
+                    prompt = example
+
+    for message in state.messages:
+        show_message(message)
+
+    if not demo and not model:
+        st.info("Start Ollama and install a chat model to ask questions about this library.")
+    if not selected:
+        st.info("Select at least one document in the active library.")
+    typed = st.chat_input("Ask a question about your documents…", max_chars=1500,
+                          disabled=not selected or (not demo and model is None))
+    question = (typed or prompt or "").strip()
+    if question:
+        try:
+            with st.spinner("Finding relevant passages…"):
+                answer, sources = (
+                    demo_answer(question, state.passages) if demo else
+                    answer_question(question, state.passages, state.vectors, model, selected)
+                )
+        except (requests.RequestException, ValueError, KeyError) as error:
+            st.error(f"Couldn’t get an answer. Check Ollama and try again. {error}")
+        else:
+            state.messages.extend([
+                {"role": "user", "text": question},
+                {"role": "assistant", "text": answer, "sources": sources},
+            ])
+            st.rerun()

@@ -1,268 +1,63 @@
-# 📚 Ask My Docs
+# Ask My Docs
 
-A **private, local AI chatbot** that can answer questions from your PDFs, text files, or personal notes using **Ollama + LangChain + Redis Vector Database**.
+Ask questions across your documents, read the passages behind each answer, and export the conversation. Ask My Docs is a Streamlit workspace for local document Q&A with Ollama.
 
-🔒 **100% Private & Local** - Your data never leaves your machine!
+![Ask My Docs showing an annual leave answer, its source excerpt, and the active library](docs/demo.png)
 
-## 🎯 What You'll Learn
+## Try the demo
 
-| Step | Concept | Description |
-|------|---------|-------------|
-| 1 | Setup | Installing Ollama, Python, environment |
-| 2 | Load Model | Running a local LLM (llama3, mistral, etc.) |
-| 3 | Data Ingestion | Loading PDFs/text using LangChain |
-| 4 | Embeddings | Turning text into vectors using ollama.embeddings |
-| 5 | Vector Database | Storing & retrieving relevant info using Redis |
-| 6 | RAG | Connecting retrieved info with Ollama for answering |
-| 7 | Chat Interface | Beautiful UI using Streamlit |
-| 8 | API (optional) | Expose your chatbot via Flask API |
+The app opens with a sample company handbook. Select **How much annual leave do employees get?**, then open **Source excerpts** to check the answer against the handbook. You can also type your own query. The demo uses preset answers for the suggested questions and keyword matching for other queries, so it runs without Ollama.
 
-## 🛠️ Tools Used
-
-| Tool | Purpose |
-|------|---------|
-| **Ollama** | Runs local LLM like llama3 |
-| **LangChain** | Framework for RAG and data handling |
-| **Redis** | Vector store to retrieve info |
-| **Python** | Main language |
-| **Streamlit** | Beautiful web interface |
-
-## 🚀 Quick Start
-
-### Prerequisites
-
-1. **Install Ollama** (for local LLMs):
-   ```bash
-   # macOS
-   curl -fsSL https://ollama.ai/install.sh | sh
-   
-   # Linux
-   curl -fsSL https://ollama.ai/install.sh | sh
-   
-   # Windows
-   # Download from https://ollama.ai/download
-   ```
-
-2. **Install Redis** (for vector database):
-   ```bash
-   # macOS
-   brew install redis
-   
-   # Ubuntu/Debian
-   sudo apt-get install redis-server
-   
-   # Or use Docker
-   docker run -d -p 6380:6379 redis:alpine
-   ```
-
-3. **Install Python 3.8+**:
-   ```bash
-   # Check your version
-   python3 --version
-   ```
-
-### Installation
-
-1. **Clone and setup**:
-   ```bash
-   git clone <your-repo-url>
-   cd ask-my-docs
-   
-   # Create virtual environment
-   python3 -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   
-   # Install dependencies
-   pip install -r requirements.txt
-   ```
-
-2. **Start services**:
-   ```bash
-   # Start Ollama (in one terminal)
-   ollama serve
-   
-   # Start Redis (in another terminal)
-   redis-server
-   
-   # Or if using Docker for Redis:
-   docker run -d -p 6379:6379 redis:alpine
-   ```
-
-3. **Download a model**:
-   ```bash
-   # Download llama3 (recommended)
-   ollama pull llama3
-   
-   # Or try other models
-   ollama pull mistral
-   ollama pull codellama
-   ```
-
-4. **Add your documents**:
-   ```bash
-   # Create documents directory
-   mkdir documents
-   
-   # Add your PDFs, text files, etc.
-   cp your-document.pdf documents/
-   cp your-notes.txt documents/
-   ```
-
-5. **Run the app**:
-   ```bash
-   streamlit run app.py
-   ```
-
-6. **Open your browser** and go to `http://localhost:8501`
-
-## 📁 Project Structure
-
-```
-ask-my-docs/
-├── app.py                  # Main Streamlit application
-├── data_ingest.py          # Document loading & processing
-├── documents/              # Your PDFs, text files, etc.
-├── requirements.txt        # Python dependencies
-└── README.md              # This file
-```
-
-## 🎯 Example Use Cases
-
-### Company Documentation
-Upload your company's documentation and ask:
-- "How does the leave policy work?"
-- "What is the refund process?"
-- "What are the main features of our product?"
-
-### Research Papers
-Upload research papers and ask:
-- "What are the main findings?"
-- "What methodology was used?"
-- "What are the limitations mentioned?"
-
-### Personal Notes
-Upload your notes and ask:
-- "What did I write about machine learning?"
-- "What are my project ideas?"
-- "What are my meeting notes from last week?"
-
-## 🔧 Configuration
-
-### Supported File Types
-- **PDF** (.pdf)
-- **Text** (.txt)
-- **Markdown** (.md)
-- **Word Documents** (.docx, .doc)
-- **CSV** (.csv)
-
-### Model Options
-You can change the model in `app.py`:
-```python
-MODEL_NAME = "llama3"  # or "mistral", "codellama", etc.
-```
-
-### Vector Database
-The app uses Redis as the vector database. You can change the configuration:
-```python
-REDIS_URL = "redis://localhost:6379"
-COLLECTION_NAME = "ask_my_docs"
-```
-
-## 🚀 Advanced Features
-
-### Custom Prompts
-Modify the prompt template in `app.py` to customize how the AI responds:
-```python
-template = """You are a helpful AI assistant that answers questions based on the provided context.
-...
-```
-
-### Document Chunking
-Adjust chunk size and overlap in `data_ingest.py`:
-```python
-chunk_size=1000,      # Size of each text chunk
-chunk_overlap=200     # Overlap between chunks
-```
-
-### Multiple Models
-You can easily switch between different Ollama models:
 ```bash
-# Download different models
-ollama pull llama3
-ollama pull mistral
-ollama pull codellama
-ollama pull neural-chat
+git clone https://github.com/pspcps/ask-my-docs.git
+cd ask-my-docs
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+python -m streamlit run app.py
 ```
 
-## 🐛 Troubleshooting
+Use Python 3.11 or 3.12. On Windows PowerShell, activate the environment with `.venv\Scripts\Activate.ps1`. Open <http://localhost:8501>.
 
-### Ollama Issues
-```bash
-# Check if Ollama is running
-curl http://localhost:11434/api/tags
+## Use your own documents
 
-# Restart Ollama
-pkill ollama
-ollama serve
-```
+1. Install [Ollama](https://ollama.com/download) and start it with `ollama serve` if it is not already running.
+2. Download the chat and embedding models.
 
-### Redis Issues
-```bash
-# Check if Redis is running on port 6380
-redis-cli -p 6380 ping
+   ```bash
+   ollama pull llama3.2
+   ollama pull nomic-embed-text
+   ```
 
-# Start Redis manually on port 6380
-redis-server --port 6380
-```
+3. Select **Refresh engine status** in the sidebar. Upload one or more files and select **Index uploads**. You can also put files in `documents/` and select **Index folder**.
+4. Use **Search within** to scope a question to specific files. Open **Source excerpts** to inspect the retrieved text. PDF sources show page numbers and CSV sources show row numbers.
+5. Export the conversation as Markdown, including the source excerpts, from the active library panel.
 
-### Python Dependencies
-```bash
-# Reinstall dependencies
-pip install -r requirements.txt --upgrade
+The app accepts PDF, UTF-8 TXT and Markdown, DOCX, and CSV. Browser uploads are capped at 20 MB per file. Image-only PDFs require OCR before indexing. Indexing a new set replaces the active library and starts a new conversation. Each session keeps its index and conversation in memory. Export before closing the session if you want to keep the conversation.
 
-# Check Python version
-python3 --version
-```
+## How it works
 
-### Memory Issues
-If you're running out of memory:
-1. Use a smaller model: `ollama pull llama3:3b`
-2. Reduce chunk size in `data_ingest.py`
-3. Close other applications
+1. **Parse and split.** Extract text and keep source metadata, then split longer sections into overlapping passages.
+2. **Embed and retrieve.** Ollama embeds the passages and the question. NumPy ranks the selected documents’ passages by cosine similarity and returns up to four.
+3. **Answer and inspect.** The chat model receives numbered passages and is prompted to cite them. Open the excerpts to verify important claims against the source. Each question retrieves evidence independently.
 
-## 🔒 Privacy & Security
+The default setup sends document text and questions from Streamlit to the Ollama server on the same machine. If you set `OLLAMA_HOST` to a remote server, that server receives the text and questions. Keep Streamlit and Ollama on your own machine for a fully local setup.
 
-- **100% Local**: All processing happens on your machine
-- **No Data Sent**: Your documents never leave your computer
-- **Open Source**: Full transparency of the code
-- **No API Keys**: No external services required
+| Environment variable | Default | Purpose |
+| --- | --- | --- |
+| `OLLAMA_HOST` | `http://127.0.0.1:11434` | Ollama API address |
+| `ASK_DOCS_CHAT_MODEL` | `llama3.2` | Preferred installed chat model |
+| `ASK_DOCS_EMBED_MODEL` | `nomic-embed-text` | Model used for passage and question embeddings |
 
-## 🤝 Contributing
+## Project layout
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
+| Path | Purpose |
+| --- | --- |
+| `app.py` | Streamlit workspace, indexing controls, and conversation |
+| `workspace.py` | File parsing, passage retrieval, and Ollama integration |
+| `workspace.css` | Workspace styling |
+| `documents/sample_document.txt` | Sample handbook used by the demo |
+| `docs/demo.png` | Screenshot of the running demo |
+| `api.py`, `data_ingest.py` | Original optional Flask/Redis API, with separate `requirements-legacy-api.txt` dependencies |
 
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 🙏 Acknowledgments
-
-- [Ollama](https://ollama.ai/) for local LLM inference
-- [LangChain](https://langchain.com/) for the RAG framework
-- [Streamlit](https://streamlit.io/) for the web interface
-- [Redis](https://redis.io/) for vector storage
-
-## 📞 Support
-
-If you encounter any issues:
-1. Check the troubleshooting section above
-2. Search existing issues
-3. Create a new issue with details
-
----
-
-**Happy Document Chatting! 🎉** 
+Run `python -m unittest -v` for the workspace checks. The tests run without an Ollama server.

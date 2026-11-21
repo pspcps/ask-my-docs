@@ -1,0 +1,29 @@
+[data-testid="stHeader"] { background: transparent; }
+[data-testid="stMainBlockContainer"] { max-width: 1260px; padding-top: 3.15rem; }
+[data-testid="stSidebar"] { border-right: 1px solid #2a3839; }
+.brand { display: flex; align-items: center; gap: 12px; padding: 6px 0 22px; }
+.brand-mark {
+    display: grid; place-items: center; height: 42px; width: 42px;
+    border-radius: 12px; background: #a9e987; color: #17251a;
+    font: 700 28px Georgia, serif;
+}
+.brand strong, .brand small { display: block; }
+.brand small { color: #aab9b3; margin-top: 2px; }
+.hero {
+    border: 1px solid #354b40; border-radius: 19px;
+    padding: clamp(1.4rem, 5vw, 3.05rem);
+    background: radial-gradient(ellipse at 94% 0%, #344e3a, transparent 65%), #192723;
+    margin-bottom: 1rem;
+}
+.hero h1 {
+    font: 500 clamp(2.6rem, 6vw, 4.7rem)/1.04 Georgia, serif;
+    letter-spacing: -.045em; margin: 0; padding: .45rem 0 .7rem; color: #f2f6ed;
+}
+.hero h1 span { color: #a9e987; }
+.hero p { color: #d0dfd5; font-size: 1.02rem; margin: 0; }
+[data-testid="stChatMessage"] { border: 1px solid #2b3938; border-radius: 13px; }
+[data-testid="stChatMessage"] [data-testid="stText"] { white-space: pre-wrap; overflow-wrap: anywhere; }
+.stButton button, .stDownloadButton button { border-radius: 9px; }
+@media (max-width: 640px) {
+    [data-testid="stMainBlockContainer"] { padding-top: 3rem; }
+}
