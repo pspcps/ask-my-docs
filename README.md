@@ -1,8 +1,12 @@
 # Ask My Docs
 
-A local document Q&A service with a Streamlit workspace, a Flask API, and a background indexing worker. Upload a PDF, inspect the page behind an answer, then replace or delete the document and query the same library from either interface.
+A local **Retrieval-Augmented Generation (RAG)** service for document Q&A with a Streamlit workspace, a Flask API, and a background indexing worker. Upload a PDF, inspect the page behind an answer, then replace or delete the document and query the same library from either interface.
 
 ![Ask My Docs showing an answer and its supporting excerpt](docs/demo.png)
+
+## How RAG works
+
+The worker splits documents into passages and stores their Ollama embeddings in SQLite. When you ask a question, the service retrieves the most relevant passages and gives them to the chat model as context. The answer includes citations with excerpts and PDF page numbers so you can check the evidence.
 
 ## Run locally
 
