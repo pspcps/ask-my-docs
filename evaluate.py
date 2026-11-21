@@ -6,6 +6,7 @@ import json
 import math
 import os
 import platform
+import re
 import statistics
 import tempfile
 import time
@@ -43,7 +44,8 @@ def score_case(service, case, limit):
         "citation_count": len(citations),
         "supporting_citations": sum(any(covers([citation], support) for support in supports) for citation in citations),
         "answer_facts_match": bool(supports) and not result["abstained"] and all(
-            fact.casefold() in result["answer"].casefold() for fact in case["answer_contains"]
+            re.search(rf"\b{re.escape(fact)}\b", result["answer"], re.IGNORECASE)
+            for fact in case["answer_contains"]
         ),
         "abstained": result["abstained"],
         "abstention_reason": result["reason"],
@@ -84,13 +86,17 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dataset", type=Path, default=ROOT / "evaluations" / "v1.json")
     parser.add_argument("--output", type=Path)
-    parser.add_argument("--limit", type=int, default=4)
+    parser.add_argument("--limit", type=int, default=2)
     parser.add_argument("--hardware-note", required=True, help="CPU/GPU and memory of the Ollama host")
     args = parser.parse_args()
     dataset = json.loads(args.dataset.read_bytes())
+    if not dataset["questions"] or not dataset["corpus"]:
+        parser.error("The dataset needs at least one question and one corpus document.")
     with tempfile.TemporaryDirectory() as directory:
         service = DocumentService(Path(directory) / "eval.sqlite3")
         models = service.engine.metadata()
+        if not models["embedding_digest"] or not models["chat_digest"]:
+            parser.error("Install the configured embedding and chat models in Ollama before evaluating.")
         runtime_start = ollama_request("version")["version"]
         corpus_hashes = {}
         for filename in dataset["corpus"]:
@@ -101,6 +107,7 @@ def main():
             result = service.job(job["id"])
             if result["status"] != "ready":
                 raise RuntimeError(f"{filename}: {result['error']}")
+        indexed_passages = sum(len(item["chunk_ids"]) for item in service.documents())
         rows = [score_case(service, case, args.limit) for case in dataset["questions"]]
         if service.engine.metadata() != models or ollama_request("version")["version"] != runtime_start:
             raise RuntimeError("Ollama models or version changed during evaluation. Run again.")
@@ -108,6 +115,7 @@ def main():
             "dataset": dataset["version"],
             "dataset_sha256": hashlib.sha256(args.dataset.read_bytes()).hexdigest(),
             "corpus_sha256": corpus_hashes,
+            "indexed_passages": indexed_passages,
             "run_at": datetime.now(timezone.utc).isoformat(),
             "settings": {"k": args.limit, "min_score": service.min_score, "index_format": INDEX_FORMAT},
             "models": models,

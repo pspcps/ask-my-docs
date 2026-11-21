@@ -66,7 +66,7 @@ Each answer contains `answer`, `abstained`, `reason`, `citations`, and retrieval
 | `POST /retrieve` | Ranked passages without answer generation |
 | `POST /ask` | Answer with structured citations or abstention |
 
-Both query endpoints accept `question`, optional `document_ids`, and optional `limit` (default 4). Omit `document_ids` to search all active documents. Send an empty list to search none.
+Both query endpoints accept `question`, optional `document_ids`, and optional `limit` (default 4). Omit `document_ids` to search all active documents. Send an empty list to search none. Answer generation uses up to six retrieved passages above the score threshold.
 
 ## Storage and operations
 
@@ -94,3 +94,5 @@ python evaluate.py --hardware-note "CPU/GPU and memory of the Ollama host" --out
 CI runs the unit and API integration tests on Python 3.11 and 3.12 with a deterministic test engine. They cover the PDF lifecycle, duplicate detection, failed updates, retry, model change, and deletion during indexing.
 
 The [v1 evaluation set](evaluations/v1.json) pairs answerable questions with known source passages and includes both unrelated and plausible but unsupported questions. The evaluator builds an isolated index and reports retrieval recall at *k*, citation support and precision, expected answer facts, and correct and false abstention rates. Citation and fact checks match human-labeled excerpts and terms. Inspect the per-question answers for claim-level quality. The report records median and p95 latency, corpus hashes, model digests, Ollama version, and hardware.
+
+The [recorded CPU baseline](evaluations/baseline-v1.json) used `llama3.2` and `nomic-embed-text` on eight questions over five indexed passages. It found all six labeled passages in the top two results and abstained on all three unanswerable questions. Four of five answerable cases cited all expected sources, and three of five matched all expected facts. One answer omitted its units and another answered only half of a two-part question. Median end-to-end latency was 14.1 seconds on that CPU run.

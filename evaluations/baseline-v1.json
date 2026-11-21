@@ -1,0 +1,314 @@
+{
+  "dataset": "v1",
+  "dataset_sha256": "5bc2914bdd627fab2b1a0178f84500ef77321a41f05e680db0ca25eefe34e3fb",
+  "corpus_sha256": {
+    "field-handbook-v1.pdf": "e10309617a9b0f99796a70b94c3c47d611e5f65023b720873973132c4bf61656",
+    "equipment-guide.txt": "33ba65983f7cc4a40f1d19b7857b2effe0333f6f667bc5cb80a79cfede04f9b9",
+    "sample_document.txt": "7fadad6b7ec6ce803a2cb227d4d1bb9281133605db1a59e062187dd6a2ebc9fa"
+  },
+  "indexed_passages": 5,
+  "run_at": "2026-11-21T12:45:32.983765+00:00",
+  "settings": {
+    "k": 2,
+    "min_score": 0.35,
+    "index_format": "words-v1-f32"
+  },
+  "models": {
+    "embedding_model": "nomic-embed-text",
+    "embedding_digest": "0a109f422b47e3a30ba2b10eca18548e944e8a23073ee3f3e947efcf3c45e59f",
+    "chat_model": "llama3.2",
+    "chat_digest": "a80c4f17acd55265feec403c7aef86be0c25983ab279d83f3bcd3abbcb5b8b72"
+  },
+  "ollama_version": "0.40.17",
+  "hardware": {
+    "ollama_host": "Intel Xeon Platinum 8573C, 3 logical CPUs, 8 GiB Ollama container allocation, CPU-only",
+    "client_platform": "Linux-6.18.57-x86_64-with-glibc2.41",
+    "client_logical_cpus": 3
+  },
+  "metrics": {
+    "retrieval_recall_at_k": 1.0,
+    "citation_support_rate": 0.8,
+    "citation_precision": 1.0,
+    "answer_fact_match_rate": 0.6,
+    "correct_abstention_rate": 1.0,
+    "false_abstention_rate": 0.0,
+    "latency_ms": {
+      "retrieval_ms": {
+        "median": 295.2,
+        "p95": 384.1
+      },
+      "generation_ms": {
+        "median": 13902.15,
+        "p95": 24814.0
+      },
+      "end_to_end_answer_ms": {
+        "median": 14098.95,
+        "p95": 25000.3
+      }
+    }
+  },
+  "questions": [
+    {
+      "id": "annual-leave",
+      "answerable": true,
+      "matched_passages": 1,
+      "expected_passages": 1,
+      "citation_support": true,
+      "citation_count": 1,
+      "supporting_citations": 1,
+      "answer_facts_match": false,
+      "abstained": false,
+      "abstention_reason": null,
+      "retrieval_ms": 84.8,
+      "generation_ms": 19980.2,
+      "end_to_end_answer_ms": 20028.9,
+      "answer": "18",
+      "retrieved": [
+        {
+          "document_name": "field-handbook-v1.pdf",
+          "page": 1,
+          "score": 0.864931
+        },
+        {
+          "document_name": "sample_document.txt",
+          "page": null,
+          "score": 0.671129
+        }
+      ],
+      "citations": [
+        {
+          "document_name": "field-handbook-v1.pdf",
+          "page": 1,
+          "excerpt": "Northstar Field Handbook - Revision 1 Annual leave allowance: 18 working days every year. Submit requests at least 14 days before your leave starts. Field equipment returns are handled by the Operations Desk."
+        }
+      ]
+    },
+    {
+      "id": "leave-notice",
+      "answerable": true,
+      "matched_passages": 1,
+      "expected_passages": 1,
+      "citation_support": true,
+      "citation_count": 1,
+      "supporting_citations": 1,
+      "answer_facts_match": true,
+      "abstained": false,
+      "abstention_reason": null,
+      "retrieval_ms": 313.0,
+      "generation_ms": 10861.4,
+      "end_to_end_answer_ms": 11076.2,
+      "answer": "at least 14 days",
+      "retrieved": [
+        {
+          "document_name": "field-handbook-v1.pdf",
+          "page": 1,
+          "score": 0.826395
+        },
+        {
+          "document_name": "equipment-guide.txt",
+          "page": null,
+          "score": 0.689229
+        }
+      ],
+      "citations": [
+        {
+          "document_name": "field-handbook-v1.pdf",
+          "page": 1,
+          "excerpt": "Northstar Field Handbook - Revision 1 Annual leave allowance: 18 working days every year. Submit requests at least 14 days before your leave starts. Field equipment returns are handled by the Operations Desk."
+        }
+      ]
+    },
+    {
+      "id": "lost-radio",
+      "answerable": true,
+      "matched_passages": 1,
+      "expected_passages": 1,
+      "citation_support": true,
+      "citation_count": 1,
+      "supporting_citations": 1,
+      "answer_facts_match": true,
+      "abstained": false,
+      "abstention_reason": null,
+      "retrieval_ms": 289.0,
+      "generation_ms": 24814.0,
+      "end_to_end_answer_ms": 25000.3,
+      "answer": "Within 2 hours of losing the field radio, report to the Operations Desk.",
+      "retrieved": [
+        {
+          "document_name": "equipment-guide.txt",
+          "page": null,
+          "score": 0.907577
+        },
+        {
+          "document_name": "field-handbook-v1.pdf",
+          "page": 1,
+          "score": 0.706063
+        }
+      ],
+      "citations": [
+        {
+          "document_name": "equipment-guide.txt",
+          "page": null,
+          "excerpt": "Northstar Equipment Guide Report a lost field radio to the Operations Desk within 2 hours. If the desk is closed, call the on-duty supervisor. Store all spare batteries in the yellow equipment cabinet. The repair team checks faulty radios every Friday."
+        }
+      ]
+    },
+    {
+      "id": "battery-storage",
+      "answerable": true,
+      "matched_passages": 1,
+      "expected_passages": 1,
+      "citation_support": true,
+      "citation_count": 1,
+      "supporting_citations": 1,
+      "answer_facts_match": true,
+      "abstained": false,
+      "abstention_reason": null,
+      "retrieval_ms": 384.1,
+      "generation_ms": 9903.1,
+      "end_to_end_answer_ms": 10018.0,
+      "answer": "The yellow equipment cabinet",
+      "retrieved": [
+        {
+          "document_name": "equipment-guide.txt",
+          "page": null,
+          "score": 0.677221
+        },
+        {
+          "document_name": "field-handbook-v1.pdf",
+          "page": 1,
+          "score": 0.550594
+        }
+      ],
+      "citations": [
+        {
+          "document_name": "equipment-guide.txt",
+          "page": null,
+          "excerpt": "Northstar Equipment Guide Report a lost field radio to the Operations Desk within 2 hours. If the desk is closed, call the on-duty supervisor. Store all spare batteries in the yellow equipment cabinet. The repair team checks faulty radios every Friday."
+        }
+      ]
+    },
+    {
+      "id": "equipment-and-leave",
+      "answerable": true,
+      "matched_passages": 2,
+      "expected_passages": 2,
+      "citation_support": false,
+      "citation_count": 1,
+      "supporting_citations": 1,
+      "answer_facts_match": false,
+      "abstained": false,
+      "abstention_reason": null,
+      "retrieval_ms": 309.2,
+      "generation_ms": 12226.0,
+      "end_to_end_answer_ms": 12395.7,
+      "answer": "The repair team checks faulty radios every Friday.",
+      "retrieved": [
+        {
+          "document_name": "equipment-guide.txt",
+          "page": null,
+          "score": 0.815593
+        },
+        {
+          "document_name": "field-handbook-v1.pdf",
+          "page": 1,
+          "score": 0.803312
+        }
+      ],
+      "citations": [
+        {
+          "document_name": "equipment-guide.txt",
+          "page": null,
+          "excerpt": "Northstar Equipment Guide Report a lost field radio to the Operations Desk within 2 hours. If the desk is closed, call the on-duty supervisor. Store all spare batteries in the yellow equipment cabinet. The repair team checks faulty radios every Friday."
+        }
+      ]
+    },
+    {
+      "id": "unrelated",
+      "answerable": false,
+      "matched_passages": 0,
+      "expected_passages": 0,
+      "citation_support": false,
+      "citation_count": 0,
+      "supporting_citations": 0,
+      "answer_facts_match": false,
+      "abstained": true,
+      "abstention_reason": "insufficient_support",
+      "retrieval_ms": 200.7,
+      "generation_ms": 15578.3,
+      "end_to_end_answer_ms": 15802.2,
+      "answer": "I don\u2019t have enough evidence in the selected documents to answer that.",
+      "retrieved": [
+        {
+          "document_name": "field-handbook-v1.pdf",
+          "page": 1,
+          "score": 0.440415
+        },
+        {
+          "document_name": "sample_document.txt",
+          "page": null,
+          "score": 0.410474
+        }
+      ],
+      "citations": []
+    },
+    {
+      "id": "related-missing",
+      "answerable": false,
+      "matched_passages": 0,
+      "expected_passages": 0,
+      "citation_support": false,
+      "citation_count": 0,
+      "supporting_citations": 0,
+      "answer_facts_match": false,
+      "abstained": true,
+      "abstention_reason": "insufficient_support",
+      "retrieval_ms": 193.5,
+      "generation_ms": 16225.5,
+      "end_to_end_answer_ms": 16509.0,
+      "answer": "I don\u2019t have enough evidence in the selected documents to answer that.",
+      "retrieved": [
+        {
+          "document_name": "field-handbook-v1.pdf",
+          "page": 1,
+          "score": 0.716088
+        },
+        {
+          "document_name": "sample_document.txt",
+          "page": null,
+          "score": 0.668653
+        }
+      ],
+      "citations": []
+    },
+    {
+      "id": "equipment-missing",
+      "answerable": false,
+      "matched_passages": 0,
+      "expected_passages": 0,
+      "citation_support": false,
+      "citation_count": 0,
+      "supporting_citations": 0,
+      "answer_facts_match": false,
+      "abstained": true,
+      "abstention_reason": "insufficient_support",
+      "retrieval_ms": 301.4,
+      "generation_ms": 8395.0,
+      "end_to_end_answer_ms": 8521.2,
+      "answer": "I don\u2019t have enough evidence in the selected documents to answer that.",
+      "retrieved": [
+        {
+          "document_name": "equipment-guide.txt",
+          "page": null,
+          "score": 0.681278
+        },
+        {
+          "document_name": "field-handbook-v1.pdf",
+          "page": 1,
+          "score": 0.543202
+        }
+      ],
+      "citations": []
+    }
+  ]
+}

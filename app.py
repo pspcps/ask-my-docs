@@ -26,13 +26,15 @@ def run_action(action, *args):
     try:
         result = action(*args)
     except ServiceError as error:
-        st.error(str(error))
-        return False
-    if isinstance(result, dict) and result.get("duplicate"):
-        state.notice = "That content is already in the library or queued."
+        notice = ("error", str(error))
     else:
-        state.notice = "Library updated." if result is None else f"Version {result['version']} queued."
-    return True
+        if result is None:
+            notice = ("info", "Document removed.")
+        elif result.get("duplicate"):
+            notice = ("info", f"{result['name']} is already in the library or queued.")
+        else:
+            notice = ("info", f"{result['name']} · version {result['version']} queued.")
+    state.setdefault("notices", []).append(notice)
 
 
 def library_snapshot(documents):
@@ -74,9 +76,11 @@ with st.sidebar:
     demo = state.mode == "Sample handbook"
     if not demo:
         st.subheader("Manage documents")
-        notice = state.pop("notice", None)
-        if notice:
-            st.info(notice)
+        for level, notice in state.pop("notices", []):
+            if level == "error":
+                st.error(notice)
+            else:
+                st.info(notice)
         labels = {item["id"]: f"{item['name']} · {item['id'][:6]}" for item in documents}
         target = st.selectbox(
             "Action", [None, *labels], format_func=lambda item: labels.get(item, "Add a document"),
@@ -86,24 +90,25 @@ with st.sidebar:
             accept_multiple_files=target is None, key=f"files-{target}",
         )
         if st.button("Queue replacement" if target else "Queue uploads", disabled=not files, width="stretch"):
-            successful = False
             for file in ([files] if target else files):
-                successful = run_action(service.enqueue, file.name, file.getvalue(), target) or successful
-            if successful:
-                st.rerun()
+                run_action(service.enqueue, file.name, file.getvalue(), target)
+            st.rerun()
         if target:
             item = next(item for item in documents if item["id"] == target)
             job = item["latest_job"]
             if job["status"] == "failed":
                 st.error(job["error"])
-                if st.button("Retry failed job", width="stretch") and run_action(service.retry, job["id"]):
+                if st.button("Retry failed job", width="stretch"):
+                    run_action(service.retry, job["id"])
                     st.rerun()
             if item["active"] and job["status"] not in ("queued", "running"):
-                if st.button("Rebuild embeddings", width="stretch") and run_action(service.rebuild, target):
+                if st.button("Rebuild embeddings", width="stretch"):
+                    run_action(service.rebuild, target)
                     st.rerun()
             with st.popover("Delete document", width="stretch"):
                 st.write("Remove this document, its active passages, and its job history.")
-                if st.button("Confirm deletion") and run_action(service.delete, target):
+                if st.button("Confirm deletion"):
+                    run_action(service.delete, target)
                     st.rerun()
         job_status(library_snapshot(documents))
         st.caption("Run `python worker.py` to process queued jobs.")
@@ -130,10 +135,11 @@ with context_column:
             selected = []
         else:
             st.caption("Persistent library · shared with the API")
-            st.markdown(f"**{len(active)}** active · **{sum(len(item['chunk_ids']) for item in active.values())}** passages")
+            count = sum(len(item["chunk_ids"]) for item in active.values())
+            st.markdown(f"**{len(active)}** active · **{count}** {'passage' if count == 1 else 'passages'}")
             selected = st.multiselect(
                 "Search within", list(active), default=list(active), format_func=lambda item: labels[item],
-                key=f"scope-{','.join(active)}",
+                key=f"scope-{history_key[1]}",
             )
             for item in documents:
                 job = item["latest_job"]

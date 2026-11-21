@@ -1,6 +1,6 @@
 {
   "version": "v1",
-  "corpus": ["field-handbook-v1.pdf", "equipment-guide.txt"],
+  "corpus": ["field-handbook-v1.pdf", "equipment-guide.txt", "sample_document.txt"],
   "questions": [
     {
       "id": "annual-leave",
@@ -10,25 +10,25 @@
     },
     {
       "id": "leave-notice",
-      "question": "How far in advance do I submit a leave request?",
+      "question": "How far in advance does Northstar require a field employee to submit a leave request?",
       "supports": [{"document": "field-handbook-v1.pdf", "page": 1, "contains": "at least 14 days before your leave starts"}],
       "answer_contains": ["14", "days"]
     },
     {
       "id": "lost-radio",
-      "question": "Where and how soon should I report a lost field radio?",
+      "question": "Where and how soon should a Northstar employee report a lost field radio?",
       "supports": [{"document": "equipment-guide.txt", "page": null, "contains": "Operations Desk within 2 hours"}],
       "answer_contains": ["Operations Desk", "2 hours"]
     },
     {
       "id": "battery-storage",
-      "question": "Where are spare batteries stored?",
+      "question": "Where does Northstar store spare batteries?",
       "supports": [{"document": "equipment-guide.txt", "page": null, "contains": "yellow equipment cabinet"}],
       "answer_contains": ["yellow equipment cabinet"]
     },
     {
       "id": "equipment-and-leave",
-      "question": "When does the repair team check faulty radios, and how many days of annual leave do employees receive?",
+      "question": "When does Northstar’s repair team check faulty radios, and how many annual leave days do Northstar field employees receive?",
       "supports": [
         {"document": "field-handbook-v1.pdf", "page": 1, "contains": "18 working days every year"},
         {"document": "equipment-guide.txt", "page": null, "contains": "checks faulty radios every Friday"}

@@ -1,6 +1,7 @@
 """Exercise the HTTP interface and independent worker against the same database."""
 
 import io
+import os
 import tempfile
 import unittest
 from concurrent.futures import ThreadPoolExecutor
@@ -8,6 +9,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import numpy as np
+from streamlit.testing.v1 import AppTest
 
 from api import create_app
 from service import DocumentService
@@ -98,6 +100,21 @@ class LifecycleTests(unittest.TestCase):
         self.assertTrue(self.ask().json["abstained"])
         with self.worker.connection() as db:
             self.assertEqual(db.execute("SELECT COUNT(*) FROM chunks").fetchone()[0], 0)
+
+    def test_streamlit_scope_stays_searchable_after_a_rename(self):
+        original = self.upload().json
+        self.worker.process_next()
+        with patch.dict(os.environ, {"ASK_DOCS_DB": str(self.path)}):
+            ui = AppTest.from_file(str(ROOT / "app.py")).run()
+            ui.radio[0].set_value("Document library").run()
+            self.assertEqual(ui.multiselect[0].value, [original["document_id"]])
+            replacement = (ROOT / "examples" / "field-handbook-v2.pdf").read_bytes()
+            self.service.enqueue("replacement.pdf", replacement, original["document_id"])
+            self.worker.process_next()
+            ui.run()
+            self.assertEqual(ui.multiselect[0].value, [original["document_id"]])
+            self.assertFalse(ui.chat_input[0].disabled)
+            self.assertFalse(ui.exception)
 
     def test_failure_retry_and_embedding_rebuild(self):
         initial = self.upload().json
