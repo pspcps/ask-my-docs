@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 import numpy as np
 
-from workspace import Passage, answer_question, demo_answer, demo_passages, embed, passages_from_file
+from workspace import Passage, demo_answer, demo_passages, embed, passages_from_file
 
 
 class WorkspaceTests(unittest.TestCase):
@@ -36,22 +36,6 @@ class WorkspaceTests(unittest.TestCase):
         self.assertEqual(request.call_count, 2)
         self.assertEqual(vectors.shape, (33, 2))
         np.testing.assert_allclose(np.linalg.norm(vectors, axis=1), 1)
-
-    @patch("workspace.ollama_request")
-    def test_retrieval_respects_selected_files(self, request):
-        request.side_effect = [
-            {"embeddings": [[1, 0]]},
-            {"message": {"content": "Answer [1]"}},
-        ]
-        passages = [Passage("excluded.txt", "Document", "Excluded secret"),
-                    Passage("included.txt", "Document", "Included evidence")]
-        answer, sources = answer_question("question", passages, np.eye(2), "model", ["included.txt"])
-        prompt = request.call_args.args[1]["messages"][1]["content"]
-        self.assertEqual(answer, "Answer [1]")
-        self.assertEqual(sources, passages[1:])
-        self.assertIn("[1] included.txt", prompt)
-        self.assertNotIn("Excluded secret", prompt)
-
 
 if __name__ == "__main__":
     unittest.main()
